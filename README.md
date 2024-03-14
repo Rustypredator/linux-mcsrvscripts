@@ -30,6 +30,18 @@ For this to work, the server obviously needs to have rcon enabled and SET A PASS
 
 #### Watchdog
 Finally, this script verifies that the server is actually started and responsive (by checking the response of the "list" command.)  
-If it detects that there is no screen for the server, it is started.  
+If it detects that there is no screen for the server, the server is started.  
 If it detects a screen does exist, it checks the response of "list" to see if the server is responsive.  
 If the server isnt responding, the server is killed and restarted.
+This script takes one argument, the server and therefor the folder name.  
+Example: 
+`./watchdog survival`  
+This will check the server in the "survival" folder and with the same screen name.  
+For any action, the scripts inside the servers own folder are used, for example sending the stop command.  
+This watchdog is intended to be automated with cronjobs.  
+Example:
+`* * * * * /home/game/watchdog survival >> /home/game/survival/cron.log`  
+This will check the survival server every minute and output the watchdog results in a cron.log file inside the servers folder.
+
+#### Questions
+Please open an issue or contact me on discord: rustypredator
