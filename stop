@@ -1,0 +1,3 @@
+#!/bin/sh
+# Update folder to correspond to the correct one
+~/CHANGEME/rcon stop

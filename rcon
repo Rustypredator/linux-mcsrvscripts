@@ -1,0 +1,3 @@
+#!/bin/sh
+# change location of mcrcon, port and password corresponding to your env
+~/mcrcon -H localhost -P 25566 -p "PASSWORD" $@

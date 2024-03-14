@@ -1,0 +1,3 @@
+#!/bin/sh
+# change the name for the screen (CHANGEME) and add your start command
+screen -dmS CHANGEME /usr/bin/java -jar server.jar -nogui "$@"

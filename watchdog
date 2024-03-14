@@ -1,0 +1,58 @@
+#!/bin/bash
+
+servername=$1
+discordWebhookUrl="https://discord.com/api/webhooks/"
+serverDir="~/$servername"
+lockfile="watchdog.lock"
+skipfile="watchdog.skip"
+
+echo "$(date) - Checking $servername"
+
+cd $serverDir
+
+# lockfile is used to disable the watchdog
+if [ -f $lockfile ]; then
+    echo "$(date) - $servername is locked (watchdog disabled)"
+    exit 0
+fi
+
+# skipfile is used to prevent the watchdog from restarting the server too often
+# the skipfile contains a counter, which is decremented each time the watchdog runs until the file is empty or the counter is 0 (in which case the file is deleted)
+if [ -f $skipfile ]; then
+    echo "$(date) - $servername is marked for skipping"
+    skipfile_content=$(cat $skipfile)
+    if [ -z "$skipfile_content" ]; then
+        rm $skipfile
+        exit 0
+    fi
+
+    if [ "$skipfile_content" -eq 0 ]; then
+        rm $skipfile
+    else
+        new_skipfile_content=$((skipfile_content - 1))
+        echo "$new_skipfile_content" > $skipfile
+    fi
+    exit 0
+fi
+
+# check if server is running
+if ! screen -list | grep -q $servername; then
+    echo "$(date) - $servername is not running"
+    curl -H "Content-Type: application/json" -X POST -d "{\"username\":\"Server Watchdog ($servername)\", \"content\":\"server is not running, restarting\"}" $discordWebhookUrl &
+    bash start &
+    # give server time to start
+    touch $skipfile #skip 1 check (1 Minute)
+else
+    echo "$(date) - $servername is already running"
+    # check if server is responsive. use rcon to check playercount
+    if ! /srv/cst/$servername/rcon -c "list" | grep -q "players online"; then
+        echo "$(date) - $servername is unresponsive, killing process"
+        curl -H "Content-Type: application/json" -X POST -d "{\"username\":\"Server Watchdog ($servername)\", \"content\":\"server is unresponsive, killing hanging server.\"}" $discordWebhookUrl &
+        # get pid:
+        pid=$(screen -list | grep $servername | awk -F'.' '{print $1}')
+        kill -9 $pid
+        touch $skipfile #skip 1 check (1 Minute)
+        sleep 5
+        screen -wipe
+    fi
+fi
