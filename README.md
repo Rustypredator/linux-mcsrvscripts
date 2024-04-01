@@ -29,7 +29,7 @@ This script contains the settings for the server its associated with:
 For this to work, the server obviously needs to have rcon enabled and SET A PASSWORD!!!!  
 
 #### Watchdog
-Finally, this script verifies that the server is actually started and responsive (by checking the response of the "list" command.)  
+This script verifies that the server is actually started and responsive (by checking the response of the "list" command.)  
 If it detects that there is no screen for the server, the server is started.  
 If it detects a screen does exist, it checks the response of "list" to see if the server is responsive.  
 If the server isnt responding, the server is killed and restarted.
@@ -42,6 +42,14 @@ This watchdog is intended to be automated with cronjobs.
 Example:
 `* * * * * /home/game/watchdog survival >> /home/game/survival/cron.log`  
 This will check the survival server every minute and output the watchdog results in a cron.log file inside the servers folder.
+
+#### Backup
+This script backs up the world of the specified server.  
+I normally run this script every hour.  
+This will create Hourly Backups and archive the last backup of the day (11pm) in a different folder while removing all other backups of the previous day.  
+This way you get an daily Backup, while keeping 24 Hours of hourly Backups of your world.  
+Keep in mind, that this will consume 24-48 times the space of one backup for just the hourly backups.  
+How many daily backups are kept on the disk is not capped! (maybe i'll add another config option for that later if the need arises).  
 
 #### Questions
 Please open an issue or contact me on discord: rustypredator
