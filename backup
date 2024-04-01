@@ -1,0 +1,71 @@
+#!/bin/bash
+
+#add bashlibraries by fsteltenkamp: https://git.steltenkamp.net/fsteltenkamp/bashLibraries
+export LOGLEVEL=0
+export LOGFILENAME="backup.log"
+export BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export CONFIGFILE="config.json"
+export CONFIGPATH="${BASEDIR}/.config/${CONFIGFILE}"
+export RESTARTLOC
+export DEBUG=true
+RESTARTLOC=$(readlink -f "$0")
+
+#libraries stuff
+if [ ! -d ".libs" ]; then
+    mkdir ".libs"
+fi
+
+if [ ! -f ".libs/downloaders.sh" ]; then
+    wget -qO ".libs/downloaders.sh" https://git.steltenkamp.net/fsteltenkamp/bashLibraries/raw/branch/master/downloaders.sh
+    # shellcheck disable=SC1091
+    source ".libs/downloaders.sh"
+else
+    # shellcheck disable=SC1091
+    source ".libs/downloaders.sh"
+fi
+
+#libraries
+getLib "output" "input"
+
+servername=myservername
+workdir=/srv/minecraft
+serverdir=$workdir/$servername
+worldpath=$serverdir/world
+backupdir=$workdir/backups/$servername
+archivedir=$workdir/backup_archive/$servername
+
+log "debug" "starting backup for $servername"
+log "debug" "sending commands to server..."
+$serverdir/rcon save-all
+$serverdir/rcon "say starting backup"
+
+START=$SECONDS
+backupfile=$backupdir/$(date +"%y-%m-%d_%H%m")_world.tar.gz
+
+log "debug" "creating backup file $backupfile"
+tar -czf $backupfile $worldpath
+
+duration=$((SECONDS - START))
+size=$(du -sh $backupfile)
+
+log "success" "backup finished. saved $size in $duration."
+
+#remove yesterday's backups after 11pm, only keep the last backup after 23:00
+if [ "$(date +%H)" -ge 23 ]; then
+    #make sure the archive exists:
+    mkdir -p $archivedir
+    log "debug" "backup is running after 23h, cleaning up..." "cleanup"
+    #move yesterday's last backup to ./archive
+    yesterday_backupfile=$backupdir/$(date -d "yesterday" +"%y-%m-%d")_23*
+    log "debug" "moving last backup from yesterday to archive: $yesterday_backupfile:" "cleanup"
+    ls $yesterday_backupfile
+    mv $yesterday_backupfile $archivedir/
+    #delete all other backups from yesterday
+    yesterday_backupfiles=$backupdir/$(date -d "yesterday" +"%y-%m-%d")*
+    log "debug" "removing all other old backups from yesterday:" "cleanup"
+    ls $yesterday_backupfiles
+    rm -f $yesterday_backupfiles
+fi
+
+log "debug" "sending commands to server..."
+$serverdir/rcon "say backup finished."
