@@ -51,5 +51,16 @@ This way you get an daily Backup, while keeping 24 Hours of hourly Backups of yo
 Keep in mind, that this will consume 24-48 times the space of one backup for just the hourly backups.  
 How many daily backups are kept on the disk is not capped! (maybe i'll add another config option for that later if the need arises).  
 
+#### Logpost
+This script posts all crash-reports automatically to mclo.gs.  
+It will alert you using a Discord Webhook as to where you can find the log.  
+Also it can move logs to another folder, so you can manually review it too.  
+##### Setup:
+- Replace the Discord Webhook URL With your own!
+- Use it. `./logpost survival`
+- You can also use this with crontab.
+    - Example: `* * * * * /home/game/logpost survival`
+    - This Example would post any and all crash logs that appear in the configured folder.
+
 #### Questions
 Please open an issue or contact me on discord: rustypredator
