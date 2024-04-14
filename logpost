@@ -16,8 +16,7 @@ for file in $crashReportsDir/*; do
     if [ -f "$file" ]; then
         echo "Found crash log: $file"
         # post log
-        content=$(cat "$file")
-        content=$(echo $content | sed 's/"//g')
+        content=$(cat $file | sed 's/"//g')
         response=$(curl -X POST -d "content=$content" -H "Content-Type: application/x-www-form-urlencoded" $APIURL)
 
         # Response is in json format.
@@ -27,6 +26,8 @@ for file in $crashReportsDir/*; do
         if [ "$success" = "true" ]; then
             # Send discord webhook
             curl -X POST -d "content=Crash Log for $1: $url" -H "Content-Type: application/x-www-form-urlencoded" $DCWebhook
+            # Make sure the backup directory exists
+            mkdir -p "$backupDir/crash"
             # move sent file to archive
             mv "$file" "$backupDir/crash/$(basename $file)"
         else
