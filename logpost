@@ -1,0 +1,36 @@
+#!/bin/bash
+
+APIURL="https://api.mclo.gs/1/log"
+DCWebhook="https://discord.com/api/webhooks/CHANGEME"
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <server>"
+    exit 1
+fi
+
+backupDir="/home/game/backups/logs/$1"
+crashReportsDir="/home/game/$1/crash-reports"
+
+# loop files in $crashReportsDir
+for file in $crashReportsDir/*; do
+    if [ -f "$file" ]; then
+        echo "Found crash log: $file"
+        # post log
+        content=$(cat "$file")
+        content=$(echo $content | sed 's/"//g')
+        response=$(curl -X POST -d "content=$content" -H "Content-Type: application/x-www-form-urlencoded" $APIURL)
+
+        # Response is in json format.
+        success=$(echo "$response" | jq -r '.success')
+        url=$(echo "$response" | jq -r '.url')
+        raw=$(echo "$response" | jq -r '.raw')
+        if [ "$success" = "true" ]; then
+            # Send discord webhook
+            curl -X POST -d "content=Crash Log for $1: $url" -H "Content-Type: application/x-www-form-urlencoded" $DCWebhook
+            # move sent file to archive
+            mv "$file" "$backupDir/crash/$(basename $file)"
+        else
+            echo "Failure!"
+        fi
+    fi
+done
