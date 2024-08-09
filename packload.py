@@ -6,6 +6,10 @@ import requests
 import zipfile
 import shutil
 import re
+import time
+
+baseurl = "https://api.modrinth.com/v2/"
+useragent = "packload/0.0.1 (contact@rusty.info)"
 
 class bcolors:
     HEADER = '\033[95m'
@@ -25,6 +29,36 @@ def print_usage():
     print(f"   ├ server  {bcolors.DEBUG}// Installs all mods that have server set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
     print(f"   ╰ client  {bcolors.DEBUG}// Installs all mods that have client set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
 
+def download(url: str, file_path='', file_name=''):
+    url = url.strip("\"'")  # Strip leading and trailing characters
+    if not file_name:
+        file_name = url.split('/')[-1]
+    headers = {"User-Agent": useragent}
+    try:
+        response = requests.get(url, headers=headers, stream=True)
+    except requests.exceptions.RequestException as e:
+        print(f"{bcolors.FAIL} error {bcolors.ENDC} {e}")
+        sys.exit(1)
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024
+    progress_bar_width = 50
+
+    with open(os.path.join(file_path, file_name), 'wb') as file:
+        progress = 0
+        for data in response.iter_content(block_size):
+            progress += len(data)
+            file.write(data)
+            completed = int(progress / total_size * progress_bar_width)
+            remaining = progress_bar_width - completed
+            progress_bar = '[' + '=' * completed + '>' + '.' * remaining + ']'
+            sys.stdout.write('\r' + progress_bar)
+            sys.stdout.flush()
+
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+
+# start here
+
 if len(sys.argv) < 3:
     print_usage()
     exit()
@@ -32,10 +66,9 @@ if len(sys.argv) < 3:
 mrpackpath = sys.argv[1]
 outputpath = sys.argv[2]
 mode = sys.argv[3]
-baseurl = "https://api.modrinth.com/v2/"
-useragent = "packload/0.0.1 (contact@rusty.info)"
 
-#check if outputpath exists:
+
+# check if outputpath exists:
 if not os.path.exists(outputpath):
     os.makedirs(outputpath)
 
@@ -76,7 +109,7 @@ with open("tmp/modrinth.index.json", "r") as file:
             if server_side == "required" or server_side == "optional":
                 name = project["title"]
                 print(f"{bcolors.OKGREEN} downloading {bcolors.ENDC} Mod {name} is required or optional on server.")
-                os.system(f"wget -q {downloadUrl} -P {outputpath}")
+                download(downloadUrl, outputpath)
             else:
                 name = project["title"]
                 print(f"{bcolors.HEADER} skipping {bcolors.ENDC} Mod {name} is not required on server.")
@@ -86,7 +119,7 @@ with open("tmp/modrinth.index.json", "r") as file:
             if client_side == "required" or client_side == "optional":
                 name = project["title"]
                 print(f"{bcolors.OKGREEN} downloading {bcolors.ENDC} Mod {name} is required or optional on client.")
-                os.system(f"wget -q {downloadUrl} -P {outputpath}")
+                download(downloadUrl, outputpath)
             else:
                 name = project["title"]
                 print(f"{bcolors.HEADER} skipping {bcolors.ENDC} Mod {name} is not required on client.")
