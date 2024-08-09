@@ -7,22 +7,33 @@ import zipfile
 import shutil
 import re
 
-mrpackpath = sys.argv[1]
-outputpath = sys.argv[2]
-mode = sys.argv[3]
-baseurl = "https://api.modrinth.com/v2/"
-useragent = "packload/0.0.1 (contact@rusty.info)"
-
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
+    DEBUG = '\033[90m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+def print_usage():
+    print(f"Usage: packload {bcolors.OKGREEN}/path/to/mrpack/file/ {bcolors.OKCYAN}/path/to/outputfolder/ {bcolors.WARNING}mode{bcolors.ENDC}")
+    print(f" ╰ Available Modes:")
+    print(f"   ├ server  {bcolors.DEBUG}// Installs all mods that have server set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
+    print(f"   ╰ client  {bcolors.DEBUG}// Installs all mods that have client set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
+
+if len(sys.argv) < 3:
+    print_usage()
+    exit()
+
+mrpackpath = sys.argv[1]
+outputpath = sys.argv[2]
+mode = sys.argv[3]
+baseurl = "https://api.modrinth.com/v2/"
+useragent = "packload/0.0.1 (contact@rusty.info)"
 
 #check if outputpath exists:
 if not os.path.exists(outputpath):
