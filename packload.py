@@ -32,7 +32,7 @@ def print_usage():
     print(f"   ╰ client  {bcolors.DEBUG}// Installs all mods that have client set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
 
 def download(url: str, file_path='', file_name=''):
-    url = url.strip(\""'\")  # Strip leading and trailing characters
+    url = url.strip("\"'")  # Strip leading and trailing characters
     if not file_name:
         file_name = url.split('/')[-1]
     headers = {"User-Agent": useragent}
