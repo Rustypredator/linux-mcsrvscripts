@@ -11,6 +11,8 @@ import time
 baseurl = "https://api.modrinth.com/v2/"
 useragent = "packload/0.0.1 (contact@rusty.info)"
 
+RATELIMIT_FALLBACK_WAIT = 5  # seconds to wait when rate limit headers are missing
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -30,7 +32,7 @@ def print_usage():
     print(f"   ╰ client  {bcolors.DEBUG}// Installs all mods that have client set to \"{bcolors.FAIL}required{bcolors.DEBUG}\" or \"{bcolors.FAIL}optional{bcolors.DEBUG}\"{bcolors.ENDC}")
 
 def download(url: str, file_path='', file_name=''):
-    url = url.strip("\"'")  # Strip leading and trailing characters
+    url = url.strip(\""'\")  # Strip leading and trailing characters
     if not file_name:
         file_name = url.split('/')[-1]
     headers = {"User-Agent": useragent}
@@ -56,6 +58,21 @@ def download(url: str, file_path='', file_name=''):
 
     sys.stdout.write('\n')
     sys.stdout.flush()
+
+def check_ratelimit_and_wait(headers):
+    """Check rate limit headers and sleep if needed.
+    If headers are missing, assume rate limit may be reached and wait a short fallback period."""
+    remaining = headers.get("X-RateLimit-Remaining")
+    if remaining is None:
+        print(f"{bcolors.WARNING} warn {bcolors.ENDC} Rate limit headers missing, waiting {RATELIMIT_FALLBACK_WAIT}s before retrying...")
+        time.sleep(RATELIMIT_FALLBACK_WAIT)
+        return True  # signal that a retry is warranted
+    if remaining == "0":
+        reset_timer = int(headers.get("X-RateLimit-Reset", RATELIMIT_FALLBACK_WAIT))
+        print(f"{bcolors.FAIL} error {bcolors.ENDC} Rate limit reached, waiting {reset_timer} seconds...")
+        time.sleep(reset_timer)
+        return True  # signal that a retry is warranted
+    return False
 
 # start here
 
@@ -96,12 +113,12 @@ with open("tmp/modrinth.index.json", "r") as file:
         except requests.exceptions.RequestException as e:
             print(f"{bcolors.FAIL} error {bcolors.ENDC} {e}")
             sys.exit(1)
-        headers = response.headers
-        if headers["X-RateLimit-Remaining"] == "0":
-            resetTimer = int(headers["X-RateLimit-Reset"])
-            print(f"{bcolors.FAIL} error {bcolors.ENDC} Rate limit reached, waiting {resetTimer} seconds...")
-            time.sleep(resetTimer)
-            response = requests.get(baseurl + "project/" + id)
+        if check_ratelimit_and_wait(response.headers):
+            try:
+                response = requests.get(baseurl + "project/" + id, headers={"User-Agent": useragent})
+            except requests.exceptions.RequestException as e:
+                print(f"{bcolors.FAIL} error {bcolors.ENDC} {e}")
+                sys.exit(1)
         project = response.json()
         if mode == "server":
             #get field "server_side":
